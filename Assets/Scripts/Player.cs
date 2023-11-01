@@ -15,8 +15,6 @@ public class Player : MonoBehaviour
     [SerializeField]
     private float _jumpHeight;
 
-    private Animator _anim;
-
     [SerializeField]
     private bool _hanging;
     [SerializeField]
@@ -47,10 +45,8 @@ public class Player : MonoBehaviour
     const string PLAYER_LADDER_CLIMB = "LadderClimb";
     const string PLAYER_LADDER_EXIT = "LadderExit";
 
-    // Start is called before the first frame update
     void Start()
     {
-        _anim = GetComponentInChildren<Animator>();
         _controller = GetComponent<CharacterController>();
         _animState = GetComponent<PlayerAnimatorState>();
     }
@@ -88,6 +84,7 @@ public class Player : MonoBehaviour
         onLadder = true;
         activeLadder = currentLadder;
         _animState.ChangeAnimationState(PLAYER_LADDER_IDLE);
+        _gravity = 0;
     }
 
     public void GetOffLadder()
@@ -103,22 +100,31 @@ public class Player : MonoBehaviour
         }
     }
 
-    #endregion
-
-    void Update()
+    void LadderMovement()
     {
-        if(onLadder == false)
+        if (onLadder == true)
         {
-            Movement();
-            ClimbUp();
-            ActivateElevator();
+            _speed = 10f;
+            float verticalInput = Input.GetAxisRaw("Vertical");
+            _direction = new Vector3(0, verticalInput, 0);
+
+            if (verticalInput != 0)
+            {
+                _animState.ChangeAnimationState(PLAYER_LADDER_CLIMB);
+            }
+            else if (verticalInput == 0)
+            {
+                _animState.ChangeAnimationState(PLAYER_LADDER_IDLE);
+            }
         }
-        else if(onLadder == true)
-        {
-            LadderMovement();
-        }
+
+        _direction.y -= _gravity * Time.deltaTime;
+        _controller.Move(_direction * _speed * Time.deltaTime);
     }
 
+    #endregion
+
+    #region Normal Movement
     public void ActivateElevator()
     {
         if (_canUseElevator == true)
@@ -129,27 +135,7 @@ public class Player : MonoBehaviour
             }
         }
     }
-    void LadderMovement()
-    {
-        if(onLadder == true)
-        {
-            _speed = 10f;
-            float verticalInput = Input.GetAxisRaw("Vertical");
-            _direction = new Vector3(0, verticalInput, 0);
 
-            if(verticalInput != 0)
-            {
-                _animState.ChangeAnimationState(PLAYER_LADDER_CLIMB);
-            }
-            else if(verticalInput == 0)
-            {
-                _animState.ChangeAnimationState(PLAYER_LADDER_IDLE);
-            }
-        }
-        
-        _direction.y -= _gravity * Time.deltaTime;
-        _controller.Move(_direction * _speed * Time.deltaTime);
-    }
     void Movement()
     {
         if (_controller.isGrounded == true && onLadder == false)
@@ -157,7 +143,7 @@ public class Player : MonoBehaviour
             _speed = 25f;
             float horizontalInput = Input.GetAxisRaw("Horizontal");
             _direction = new Vector3(0, 0, horizontalInput);
-           // _anim.SetFloat("Move", Mathf.Abs(horizontalInput));
+            // _anim.SetFloat("Move", Mathf.Abs(horizontalInput));
 
             if (horizontalInput != 0)
             {
@@ -180,16 +166,32 @@ public class Player : MonoBehaviour
 
         if (_hanging == true || onLadder == true || leavingLader == true)
         {
-          //  _anim.SetBool("Jumping", false);
+            //  _anim.SetBool("Jumping", false);
         }
 
         else
         {
-          //  _anim.SetBool("Jumping", !_controller.isGrounded);
+            //  _anim.SetBool("Jumping", !_controller.isGrounded);
         }
         _direction.y -= _gravity * Time.deltaTime;
         _controller.Move(_direction * _speed * Time.deltaTime);
 
     }
+    #endregion
+
+    void Update()
+    {
+        if(onLadder == false)
+        {
+            Movement();
+            ClimbUp();
+            ActivateElevator();
+        }
+        else if(onLadder == true)
+        {
+            LadderMovement();
+        }
+    }
+  
 }
 
